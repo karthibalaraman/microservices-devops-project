@@ -1,0 +1,13 @@
+{
+  "name": "product-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo Product microservice for DevOps CI/CD assignment",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

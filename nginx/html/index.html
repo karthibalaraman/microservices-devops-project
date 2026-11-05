@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Microservices Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f3f6fb; color: #172033; }
+    header { padding: 32px 20px; background: #14213d; color: white; }
+    header h1 { margin: 0 0 8px; }
+    main { max-width: 1000px; margin: 28px auto; padding: 0 18px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 18px; }
+    section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px #14213d12; }
+    input, button { width: 100%; padding: 10px; margin: 6px 0; border-radius: 7px; border: 1px solid #cbd5e1; }
+    button { background: #2563eb; color: white; border: 0; cursor: pointer; font-weight: bold; }
+    button.delete { background: #b91c1c; width: auto; padding: 6px 10px; }
+    .status { font-size: 13px; color: #475569; }
+    li { margin: 9px 0; overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; background: #0f172a; color: #dbeafe; padding: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Microservices Demo Application</h1>
+  <div>User Service · Product Service · Order Service</div>
+</header>
+<main>
+  <p class="status">This demo is designed for Docker, Nginx, Jenkins, Amazon ECR and AWS EC2 practice.</p>
+  <div class="grid">
+    <section>
+      <h2>User Service</h2>
+      <form id="user-form">
+        <input name="name" placeholder="User name" required>
+        <input name="email" type="email" placeholder="Email" required>
+        <button>Add user</button>
+      </form>
+      <ul id="users"></ul>
+    </section>
+    <section>
+      <h2>Product Service</h2>
+      <form id="product-form">
+        <input name="name" placeholder="Product name" required>
+        <input name="price" type="number" min="0" step="0.01" placeholder="Price" required>
+        <input name="description" placeholder="Description">
+        <button>Add product</button>
+      </form>
+      <ul id="products"></ul>
+    </section>
+    <section>
+      <h2>Order Service</h2>
+      <form id="order-form">
+        <input name="userId" placeholder="User ID" required>
+        <input name="productId" placeholder="Product ID" required>
+        <input name="quantity" type="number" min="1" step="1" placeholder="Quantity" required>
+        <button>Create order</button>
+      </form>
+      <ul id="orders"></ul>
+    </section>
+  </div>
+  <h2>Service health</h2>
+  <pre id="health">Checking services...</pre>
+</main>
+<script>
+const routes = { users: "/users/api/users", products: "/products/api/products", orders: "/orders/api/orders" };
+async function request(url, options = {}) {
+  const response = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+function addDeleteButton(li, route, id, refresh) {
+  const button = document.createElement("button");
+  button.textContent = "Delete";
+  button.className = "delete";
+  button.onclick = async () => {
+    try { await request(`${route}/${id}`, { method: "DELETE" }); await refresh(); }
+    catch (error) { alert(error.message); }
+  };
+  li.append(" ", button);
+}
+async function loadList(key, elementId, labeler) {
+  const list = document.getElementById(elementId);
+  try {
+    const records = await request(routes[key]);
+    list.replaceChildren();
+    records.forEach(record => {
+      const li = document.createElement("li");
+      li.append(document.createTextNode(labeler(record) + ` [ID: ${record.id}]`));
+      addDeleteButton(li, routes[key], record.id, () => loadList(key, elementId, labeler));
+      list.append(li);
+    });
+    if (!records.length) list.textContent = "No records yet.";
+  } catch (error) { list.textContent = `Error: ${error.message}`; }
+}
+function bindForm(formId, route, refresh) {
+  document.getElementById(formId).addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = Object.fromEntries(new FormData(form).entries());
+    try { await request(route, { method: "POST", body: JSON.stringify(body) }); form.reset(); await refresh(); }
+    catch (error) { alert(error.message); }
+  });
+}
+const refreshUsers = () => loadList("users", "users", x => `${x.name} — ${x.email}`);
+const refreshProducts = () => loadList("products", "products", x => `${x.name} — ₹${x.price}`);
+const refreshOrders = () => loadList("orders", "orders", x => `Qty ${x.quantity}, user ${x.userId}, product ${x.productId}`);
+bindForm("user-form", routes.users, refreshUsers);
+bindForm("product-form", routes.products, refreshProducts);
+bindForm("order-form", routes.orders, refreshOrders);
+async function health() {
+  const checks = await Promise.all(["/health", "/users/health", "/products/health", "/orders/health"].map(async url => {
+    try { return `${url}: ${JSON.stringify(await request(url))}`; }
+    catch (error) { return `${url}: ERROR ${error.message}`; }
+  }));
+  document.getElementById("health").textContent = checks.join("\n");
+}
+refreshUsers(); refreshProducts(); refreshOrders(); health();
+</script>
+</body>
+</html>
