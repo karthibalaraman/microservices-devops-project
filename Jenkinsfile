@@ -130,11 +130,14 @@ pipeline {
         stage('Prepare Application EC2') {
             steps {
                 script {
-                    if (env.APP_HOST == '13.200.10.254' ||
-                        !(env.APP_HOST ==~ /^[0-9.]+$/)) {
-                        error('Set APP_HOST in the Jenkinsfile to the application EC2 public IPv4 address.')
-                    }
-                }
+    echo "Application EC2 IP: [${env.APP_HOST}]"
+
+    if (!(env.APP_HOST ==~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
+        error("Invalid APP_HOST: ${env.APP_HOST}. Set the application EC2 public IPv4 address.")
+    }
+
+    echo "Application EC2 IP validation successful."
+}
 
                 sshagent(credentials: [env.SSH_CREDENTIAL_ID]) {
                     sh '''
