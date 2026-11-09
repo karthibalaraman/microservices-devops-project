@@ -9,7 +9,7 @@ pipeline {
     environment {
         AWS_REGION = 'ap-south-1'
         // Set this to the PUBLIC IPv4 address of the APPLICATION EC2, not Jenkins EC2.
-        APP_HOST = '13.200.10.254'
+        APP_HOST = '172.31.21.227'
         APP_USER = 'ubuntu'
         DEPLOY_DIR = '/opt/microservices'
 
