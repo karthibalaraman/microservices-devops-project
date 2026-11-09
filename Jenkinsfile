@@ -130,7 +130,7 @@ pipeline {
         stage('Prepare Application EC2') {
             steps {
                 script {
-                    if (env.APP_HOST == 'REPLACE_WITH_APPLICATION_EC2_PUBLIC_IP' ||
+                    if (env.APP_HOST == '13.200.10.254' ||
                         !(env.APP_HOST ==~ /^[0-9.]+$/)) {
                         error('Set APP_HOST in the Jenkinsfile to the application EC2 public IPv4 address.')
                     }
